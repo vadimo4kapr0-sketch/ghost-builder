@@ -21,7 +21,7 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
         ImGui::StyleColorsDark();
         
         ImGui_ImplWin32_Init(WindowFromDC(hdc));
-        ImGui_ImplOpenGL3_Init("#version 150"); // Версия для Java 1.21.11
+        ImGui_ImplOpenGL3_Init("#version 150");
         init = true;
     }
 
@@ -29,7 +29,7 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // Хоткей на Right Shift для открытия/закрытия меню
+    // Хоткей на Right Shift
     if (GetAsyncKeyState(VK_RSHIFT) & 1) {
         showMenu = !showMenu;
     }
@@ -43,7 +43,6 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
         
         if (ImGui::Button("PANIC MODE (Hide)")) {
             showMenu = false;
-            // Тут в будущем будет очистка памяти
         }
         ImGui::End();
     }
@@ -55,17 +54,15 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
 }
 
 DWORD WINAPI MainThread(LPVOID) {
-    // Ждем, пока игра загрузит OpenGL
     while (!GetModuleHandleA("opengl32.dll")) Sleep(100);
     
-    // Инициализируем MinHook
     if (MH_Initialize() != MH_OK) return 1;
 
-    void* target = GetProcAddress(GetModuleHandleA("opengl32.dll"), "wglSwapBuffers");
+    // Явное приведение типов для GCC
+    void* target = (void*)GetProcAddress(GetModuleHandleA("opengl32.dll"), "wglSwapBuffers");
     
-    // Создаем хук
-    if (MH_CreateHook(target, &hkWglSwapBuffers, reinterpret_cast<LPVOID*>(&oWglSwapBuffers)) == MH_OK) {
-        MH_EnableHook(target); // Включаем хук
+    if (MH_CreateHook(target, (LPVOID)hkWglSwapBuffers, reinterpret_cast<LPVOID*>(&oWglSwapBuffers)) == MH_OK) {
+        MH_EnableHook(target);
     }
 
     return 0;
