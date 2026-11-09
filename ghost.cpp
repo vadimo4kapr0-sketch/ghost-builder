@@ -9,15 +9,15 @@ bool showMenu = true;
 bool triggerBot = false;
 bool aimAssist = false;
 
-typedef BOOL(WINAPI* wglSwapBuffers_t)(HDC);
-wglSwapBuffers_t oWglSwapBuffers = nullptr;
+typedef BOOL(WINAPI* SwapBuffers_t)(HDC);
+SwapBuffers_t oSwapBuffers = nullptr;
 
-BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
+BOOL WINAPI hkSwapBuffers(HDC hdc) {
     static bool init = false;
     if (!init) {
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
-        io.IniFilename = NULL; // Запрет сохранения на диск (Cloud-only)
+        io.IniFilename = NULL;
         ImGui::StyleColorsDark();
         
         ImGui_ImplWin32_Init(WindowFromDC(hdc));
@@ -29,18 +29,15 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // Хоткей на Right Shift
     if (GetAsyncKeyState(VK_RSHIFT) & 1) {
         showMenu = !showMenu;
     }
 
     if (showMenu) {
         ImGui::Begin("GHOST CLIENT | 1.21.11", &showMenu);
-        
         ImGui::Checkbox("Trigger Bot", &triggerBot);
         ImGui::Checkbox("Aim Assist", &aimAssist);
         ImGui::Separator();
-        
         if (ImGui::Button("PANIC MODE (Hide)")) {
             showMenu = false;
         }
@@ -50,18 +47,18 @@ BOOL WINAPI hkWglSwapBuffers(HDC hdc) {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    return oWglSwapBuffers(hdc);
+    return oSwapBuffers(hdc);
 }
 
 DWORD WINAPI MainThread(LPVOID) {
-    while (!GetModuleHandleA("opengl32.dll")) Sleep(100);
+    while (!GetModuleHandleA("gdi32.dll")) Sleep(100);
     
     if (MH_Initialize() != MH_OK) return 1;
 
-    // Явное приведение типов для GCC
-    void* target = (void*)GetProcAddress(GetModuleHandleA("opengl32.dll"), "wglSwapBuffers");
+    // Хукаем SwapBuffers из gdi32.dll (его вызывает Java)
+    void* target = (void*)GetProcAddress(GetModuleHandleA("gdi32.dll"), "SwapBuffers");
     
-    if (MH_CreateHook(target, (LPVOID)hkWglSwapBuffers, reinterpret_cast<LPVOID*>(&oWglSwapBuffers)) == MH_OK) {
+    if (MH_CreateHook(target, (LPVOID)hkSwapBuffers, reinterpret_cast<LPVOID*>(&oSwapBuffers)) == MH_OK) {
         MH_EnableHook(target);
     }
 
