@@ -12,7 +12,7 @@ jobs:
       - name: build
         shell: msys2 {0}
         run: |
-          g++ -shared -static -static-libgcc -static-libstdc++ -O2 -o ghost.dll ghost.cpp -luser32
+                    g++ -shared -static -static-libgcc -static-libstdc++ -O2 -o ghost.dll ghost.cpp -luser32 -lgdi32 -lcomctl32
       - uses: actions/upload-artifact@v4
         with:
           name: ghost-dll
