@@ -9,19 +9,23 @@ jobs:
         with:
           msystem: MINGW64
           install: mingw-w64-x86_64-gcc
-      - name: Get ImGui
+      - name: Get ImGui and MinHook
         shell: msys2 {0}
         run: |
           curl -L https://github.com/ocornut/imgui/archive/refs/tags/v1.90.4.zip -o imgui.zip
           unzip -q imgui.zip
           mv imgui-1.90.4 imgui
+          curl -L https://github.com/TsudaKageyu/minhook/archive/refs/heads/master.zip -o minhook.zip
+          unzip -q minhook.zip
       - name: build
         shell: msys2 {0}
         run: |
           g++ -shared -static -static-libgcc -static-libstdc++ -O2 -o ghost.dll ghost.cpp \
           imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp \
           imgui/backends/imgui_impl_win32.cpp imgui/backends/imgui_impl_opengl3.cpp \
-          -Iimgui -Iimgui/backends -lopengl32 -lgdi32 -luser32 -ldwmapi
+          minhook-master/src/buffer.c minhook-master/src/hook.c minhook-master/src/trampoline.c minhook-master/src/hde/hde64.c \
+          -Iimgui -Iimgui/backends -Iminhook-master/include -Iminhook-master/src/hde \
+          -lopengl32 -lgdi32 -luser32 -ldwmapi
       - uses: actions/upload-artifact@v4
         with:
           name: ghost-dll
